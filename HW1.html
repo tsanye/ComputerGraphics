@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<style>
+#info {
+  position: absolute;
+  top: 1%;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  color: #ffff00
+}
+
+body {
+  overflow: hidden;
+}
+</style>
+</head>
+
+<body> 
+<div id="info">I4B05 Computer Graphics HW1
+  <br>
+  <button id="toggle" style="width:15%">Toggle Turn</button>
+   Display Style:
+  <input type=radio class='sclass' name = 's' value=1 checked>StopWatch
+	<input type=radio class='sclass' name = 's' value=2>Sector
+  <input type=radio class='sclass' name = 's' value=3>Quartz
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js">
+</script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+
+<script>
+var renderer, camera, scene;
+var secondHand  = new THREE.Object3D(); 
+var startTime ; 
+var angle = 0 , angleNow = 0 ;
+var clock = new THREE.Clock(); 
+var hand ; 
+var cType = 1 ,clockType1 , clockType2 ;
+var turn = false ; 
+var second  ; 
+
+$("#toggle").click(function() {
+  turn = !turn; 
+  if( turn ) {
+     second =  Math.floor(clock.getElapsedTime()) ;
+     startTime = clock.getElapsedTime();
+  }
+  else{
+		 angleNow = angle;
+  }
+});
+
+$('.sclass').click(function() {
+	cType = $(this).val() ;	
+  if( cType === '2' ){
+    hand.material.visible = false ; 
+    clockType2.material.visible = true ;
+  }
+  else if ( cType === '1' || cType === '3' ){
+    hand.material.visible = true ; 
+    clockType2.material.visible = false ;
+    second = Math.floor( clock.getElapsedTime() ) ; 
+  }
+});
+
+init();
+animate();
+
+function loadTexture(  mesh , url ) {
+
+	// instantiate a loader
+  var loader = new THREE.TextureLoader();
+  loader.setCrossOrigin('');
+  // load a resource
+  loader.load(
+    url, 
+    function (texture) {   // Function when resource is loaded
+    	console.log ('texture loaded ...');
+      mesh.material = new THREE.MeshLambertMaterial( { 
+      		map: texture,
+          transparent: true
+      });
+      
+    },   
+    function(xhr) {   // Function called when download progresses
+      console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    },   
+    function(xhr) {   // Function called when download errors
+      console.log('An error happened');
+    }
+  );
+ 
+}
+
+function createClock(){
+	 
+    clockType1 = new THREE.Mesh( new THREE.PlaneGeometry(75,82)  );
+    loadTexture( clockType1 , 'https://i.imgur.com/Q1NeB5J.png' ) ;
+    clockType1.position.set(0 , -5 , 0.5 ) ;
+    scene.add( clockType1) ;
+   
+  	hand = new THREE.Mesh( new THREE.PlaneGeometry(6,40) );
+  	loadTexture( hand , 'https://i.imgur.com/QpvBr1S.png' ) ;
+  	secondHand.add(hand) ;
+    hand.position.set( 0 ,8.5 , 1 ) ;
+  	scene.add(secondHand);
+    secondHand.position.set(0 , -8.5 , 0 ) ;
+  
+  	clockType2 = new THREE.Mesh( new THREE.CircleBufferGeometry( 33, 32, 0, 0
+  ) , new THREE.MeshBasicMaterial( { color: 0x0000ff, side:THREE.DoubleSide, opacity:0.5 , transparent: true})  );
+  	clockType2.rotation.z = Math.PI/2;
+  	clockType2.position.set(0 , -9 , 1 ) ;
+  	scene.add( clockType2) ;
+		clockType2.material.visible = false ;
+}
+
+function init() {
+	
+  renderer = new THREE.WebGLRenderer({
+  	antialias: true
+  });
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	renderer.setClearColor(0x888888);
+	document.body.appendChild(renderer.domElement);
+  
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+	camera.position.z = 100; 
+	camera.lookAt(new THREE.Vector3(0 , 0 , 0 )) ;
+  
+	scene = new THREE.Scene();
+  
+  createClock();
+ 
+  var ambient = new THREE.AmbientLight(0x777777);
+	scene.add(ambient);
+	var directionalLight = new THREE.DirectionalLight(0xffffff);
+	directionalLight.position.set(0, 1, 1).normalize();
+	scene.add(directionalLight);
+}
+
+function animate() {
+  if( turn && cType === '3') {
+  	if(second < Math.floor(clock.getElapsedTime()) ){
+    	angle -= Math.PI * 2 / 60 ;
+      second =  Math.floor(clock.getElapsedTime()) ;
+    }
+  }   
+  else if (turn){	
+   var move =  -6 * (clock.getElapsedTime()  - startTime  ) / 180 * Math.PI  % (Math.PI*2)  ;
+    angle = ( angleNow  + move ) % (Math.PI*2);
+  }
+  secondHand.rotation.z = angle ;
+  clockType2.geometry =  new THREE.CircleBufferGeometry( 33 , 32, 0, angle ) ;
+  renderer.render (scene, camera);
+  requestAnimationFrame (animate);
+}
+
+</script>
+</body>
+
+</html>

@@ -42,16 +42,14 @@ var clock = new THREE.Clock();
 var hand ; 
 var cType = 1 ,clockType1 , clockType2 ;
 var turn = false ; 
-var second  ; 
 
 $("#toggle").click(function() {
   turn = !turn; 
   if( turn ) {
-     second =  Math.floor(clock.getElapsedTime()) ;
      startTime = clock.getElapsedTime();
   }
   else{
-		 angleNow = angle;
+		angleNow = angle;
   }
 });
 
@@ -64,7 +62,6 @@ $('.sclass').click(function() {
   else if ( cType === '1' || cType === '3' ){
     hand.material.visible = true ; 
     clockType2.material.visible = false ;
-    second = Math.floor( clock.getElapsedTime() ) ; 
   }
 });
 
@@ -154,10 +151,8 @@ function onWindowResize() {
 
 function animate() {
   if( turn && cType === '3') {
-  	if(second < Math.floor(clock.getElapsedTime()) ){
-    	angle -= Math.PI * 2 / 60 ;
-      second =  Math.floor(clock.getElapsedTime()) ;
-    }
+  	var move =  -6 * Math.floor(clock.getElapsedTime()  - startTime  ) / 180 * Math.PI  % (Math.PI*2)  ;
+    angle = ( angleNow  + move ) % (Math.PI*2);
   }   
   else if (turn){	
    var move =  -6 * (clock.getElapsedTime()  - startTime  ) / 180 * Math.PI  % (Math.PI*2)  ;

@@ -146,6 +146,7 @@ function buildTargetBoard(){
   	targetBoard.position.set( 30 + randomX  , 30 , 0  );
     
   targetBoard.renderOrder = 1 ;
+  targetBoard.name = "TargetBoard" ;
   targetBoard.rotation.y = Math.PI/ 2 ;
 }
 
@@ -190,7 +191,7 @@ class CannonBall{
         scene.remove(this.mesh);
     		scene.add(this.sprite);
     	}
-      if( this.pos.distanceTo(targetBoard.position) <= 5 ){
+      if( this.pos.distanceTo(targetBoard.position) <= 5 && scene.getObjectByName( "TargetBoard") !== undefined ){
       	var targetX = targetBoard.position.x ;
       	if( targetX < 0  && this.pos.x <= targetX )
         	this.fire = true ;   

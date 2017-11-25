@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<style>
+#info {
+  position: absolute;
+  top: 1%;
+  width: 100%;
+  padding: 20px;
+  text-align: center;
+  color: #ffff00
+}
+
+body {
+  overflow: hidden;
+}
+
+
+</style>
+</head>
+
+<body> 
+<div id="info">I4B05 HW3<br>
+Press W/S to move tank , Space to fire <br>
+Up / Down / Left / Right  to change direction of  cannon 
+<br><button id="toggle" style="width:20%">Change View</button>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js">
+</script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js">
+</script>
+<script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+
+
+<script>
+var renderer, camera,  scene ;
+var keyboard = new KeyboardState();
+var theta1 = 0 , theta2 =  0;
+var tank , cannon0 , turrent , turn ; //  global for change 
+var thirdPersonView = false ; 
+var cannonballs = [] ;
+var size = 20 ;
+var targetBoard ; 
+
+var stArray = [];
+
+$("#toggle").click(function() {
+  thirdPersonView = ! thirdPersonView ;
+});
+
+function buildSprite(){
+	
+   setUpStArray();
+      
+	 var geometry = new THREE.Geometry();
+    geometry.vertices.push(
+      new THREE.Vector3( -size, -size, 0),
+      new THREE.Vector3(size, -size, 0),
+      new THREE.Vector3(size, size, 0),
+      new THREE.Vector3(-size, size, 0)
+    );
+
+    geometry.faces.push( new THREE.Face3(0, 1, 2) );
+    geometry.faces.push( new THREE.Face3(0, 2, 3) );
+		
+    geometry.faceVertexUvs[0][0] = [stArray[1][0].clone(),stArray[1][1].clone(), stArray[0][1].clone()] ;
+	geometry.faceVertexUvs[0][1] = [stArray[1][0].clone(),stArray[0][1].clone(), stArray[0][0].clone()] ;
+    
+    geometry.computeBoundingSphere();
+    geometry.computeFaceNormals();
+    geometry.computeVertexNormals();
+
+    var sprite = new THREE.Mesh(geometry );
+    
+    var loader = new THREE.TextureLoader();
+		loader.setCrossOrigin('');
+	
+    // load a resource
+    loader.load(
+      // resource URL		
+      'https://i.imgur.com/6ePTx6p.png',
+      // Function when resource is loaded
+      function ( texture ) {
+      // do something with the texture
+        //texture.wrapS = THREE.RepeatWrapping; 
+         sprite.material = new THREE.MeshBasicMaterial( {
+            map: texture,
+            transparent: true,  // cutout texture: set transparent: true
+            //side: THREE.DoubleSide
+          } );
+        },
+      // Function called when download progresses
+      function ( xhr ) {
+        console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+      },
+      // Function called when download errors
+      function ( xhr ) {
+        console.log( 'An error happened' );
+      }
+    );
+		sprite.renderOrder = 2 ;  // important
+    return sprite ; 
+}
+
+function buildTargetBoard(){
+	targetBoard = new THREE.Mesh( new THREE.PlaneGeometry(30,30)  );
+  
+   var loader = new THREE.TextureLoader();
+		loader.setCrossOrigin('');
+	
+    // load a resource
+    loader.load(
+      // resource URL		
+      'https://i.imgur.com/1inoQSL.png',
+      // Function when resource is loaded
+      function ( texture ) {
+      // do something with the texture
+        //texture.wrapS = THREE.RepeatWrapping; 
+         targetBoard.material = new THREE.MeshBasicMaterial( {
+            map: texture,
+            transparent: true,  // cutout texture: set transparent: true
+            side: THREE.DoubleSide
+          } );
+        },
+      // Function called when download progresses
+      function ( xhr ) {
+        console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+      },
+      // Function called when download errors
+      function ( xhr ) {
+        console.log( 'An error happened' );
+      }
+    );
+  scene.add(targetBoard);
+  
+  // Math.random()*( max - min + 1 ) + min
+  // Math.random()*( 80 - (0) + 1 ) + 0 
+  var randomX = Math.random()* 71  ;
+  var tmp = Math.floor(Math.random()*2 );
+  if( tmp === 1 )
+  	targetBoard.position.set( -30  - randomX  , 30 , 0  );
+  else
+  	targetBoard.position.set( 30 + randomX  , 30 , 0  );
+    
+  targetBoard.renderOrder = 1 ;
+  targetBoard.rotation.y = Math.PI/ 2 ;
+}
+
+init();
+animate();
+
+class CannonBall{
+	
+  constructor( initPos , tmp ){
+  	var geometry = new THREE.SphereGeometry(1.5, 20, 20);
+  	this.mesh = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial());
+    loadTexture(this.mesh, 'https://i.imgur.com/sKVfaxZ.jpg');
+  	scene.add(this.mesh);
+  	this.pos = initPos ;
+  	this.vel = initPos.clone().sub(tmp).multiplyScalar(5) ;
+  	this.force = new THREE.Vector3(0,-10,0);
+   	this.fire = false; 
+   
+    this.baseS = 0 ;
+    this.baseT = 0;
+    this.counter = 0 ;
+    this.sprite =  buildSprite();
+    
+    this.stArray = [] ;
+    
+    for (var i = 0; i < 5; i++) {
+    	var row = [];
+    	for (var j = 0; j < 9; j++)
+      	row.push(new THREE.Vector2(j * 0.125, 1 - 0.25 * i));
+    	this.stArray.push(row);
+  	}
+  } 
+ 
+  update(dt){
+  	if( ! this.fire){
+    	this.vel.add (this.force.clone().multiplyScalar(dt));
+    	this.pos.add (this.vel.clone().multiplyScalar(dt)); 
+    	this.mesh.position.copy(this.pos);
+      if( this.pos.y < 0 ){
+    		this.fire = true ;      
+        this.sprite.position.copy(new THREE.Vector3( this.pos.x , 10 , this.pos.z ) );
+        scene.remove(this.mesh);
+    		scene.add(this.sprite);
+    	}
+      if( this.pos.distanceTo(targetBoard.position) <= 5 ){
+      	var targetX = targetBoard.position.x ;
+      	if( targetX < 0  && this.pos.x <= targetX )
+        	this.fire = true ;   
+        else if( targetX > 0 && this.pos.x >= targetX )
+					this.fire = true ;   
+        
+    		if(this.fire){       
+        	this.sprite.position.copy(targetBoard.position);
+        	scene.remove(this.mesh);
+        	scene.remove(targetBoard);
+    			scene.add(this.sprite);     
+        }
+      }
+      
+    }
+    
+  }
+  explosion(){
+  	this.counter++ ;
+  	if( this.fire && this.counter % 4 === 0 && this.counter < 130){
+    	
+      var geometry = this.sprite.geometry;
+      
+      var st0 = stArray[this.baseS + 1][this.baseT].clone();
+      var st1 = stArray[this.baseS + 1][this.baseT + 1].clone();
+      var st2 = stArray[this.baseS][this.baseT + 1].clone();
+      var st3 = stArray[this.baseS][this.baseT].clone();
+
+      geometry.faceVertexUvs[0][0][0].copy(st0);
+      geometry.faceVertexUvs[0][0][1].copy(st1);
+      geometry.faceVertexUvs[0][0][2].copy(st2);
+
+      geometry.faceVertexUvs[0][1][0].copy(st0);
+      geometry.faceVertexUvs[0][1][1].copy(st2);
+      geometry.faceVertexUvs[0][1][2].copy(st3);
+       
+      geometry.uvsNeedUpdate = true;
+
+      this.baseT = (this.baseT + 1) % 8;
+      if (this.baseT === 0) {
+        this.baseS = (this.baseS + 1) % 4;
+      }
+      this.sprite.lookAt (camera.position);	
+    }
+  	else if( this.fire && this.counter > 130){
+    		scene.remove(this.sprite);
+    }
+  }
+  
+  
+}
+
+function setUpStArray() {
+  for (var i = 0; i < 5; i++) {
+    var row = [];
+    for (var j = 0; j < 9; j++)
+      row.push(new THREE.Vector2(j * 0.125, 1 - 0.25 * i));
+    stArray.push(row);
+  }
+}
+
+function buildParts() {
+  
+  var parts = [];
+  
+	var mat = new THREE.MeshNormalMaterial()
+	var base = new THREE.Object3D();
+	var baseMesh = new THREE.Mesh (new THREE.BoxGeometry (40,10,20), mat);
+  loadTexture(baseMesh , 'https://i.imgur.com/yoZ1jSv.jpg');
+	base.add (baseMesh);
+	baseMesh.position.set (-10,5,0);
+	parts.push (base);
+
+    var turret = new THREE.Mesh (new THREE.CylinderGeometry (10,10,10, 30),mat);
+    parts.push (turret);
+    loadTexture(turret , 'https://i.imgur.com/yoZ1jSv.jpg');
+    
+    var turn = new THREE.Object3D();
+    var turnMesh = new THREE.Mesh (new THREE.CylinderGeometry (1.5, 1.5, 10, 30), mat);
+    turn.add (turnMesh);
+    loadTexture(turnMesh , 'https://i.imgur.com/yoZ1jSv.jpg');
+    turnMesh.rotation.x = Math.PI/2;
+    parts.push (turn);
+    
+    var cannon = new THREE.Object3D()
+    cannon0 = new THREE.Object3D()
+    var cannonMesh = new THREE.Mesh (new THREE.CylinderGeometry (1.5, 1.5, 10, 30), mat);
+     loadTexture(cannonMesh , 'https://i.imgur.com/yoZ1jSv.jpg');
+    cannon0.add (cannonMesh);
+    cannonMesh.position.y = 5;
+    cannon.add (cannon0);
+    cannon0.rotation.z = -Math.PI/2;
+    parts.push (cannon);
+    
+    return parts;
+}
+
+function buildTank(){
+
+  let parts = buildParts();
+  
+  let tank = new THREE.Object3D();
+
+  let base = parts[0]
+  tank.add (base);
+  
+  turret = parts[1]
+  tank.add (turret)
+  turret.position.set (0, 15, 0);
+  
+  turn = parts[2]
+  turn.position.x = 10
+  turret.add (turn);
+  
+  let cannon = parts[3]
+  turn.add (cannon);
+  
+  return tank;
+}
+
+function loadTexture(  mesh , url ) {
+
+	// instantiate a loader
+  var loader = new THREE.TextureLoader();
+  loader.setCrossOrigin('');
+  // load a resource
+  loader.load(
+    url, 
+    function (texture) {   // Function when resource is loaded
+    	console.log ('texture loaded ...');
+      mesh.material = new THREE.MeshLambertMaterial( { 
+      	map: texture,
+      	transparent: true,
+        side: THREE.DoubleSide
+      });
+     
+    },   
+    function(xhr) {   // Function called when download progresses
+      console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    },   
+    function(xhr) {   // Function called when download errors
+      console.log('An error happened');
+    }
+  );
+ 
+}
+
+
+
+function init() {
+
+  renderer = new THREE.WebGLRenderer({
+    antialias: true
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x888888);
+
+  document.body.appendChild(renderer.domElement);
+
+
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000);
+
+  scene = new THREE.Scene();
+  
+  let gridXZ = new THREE.GridHelper(300, 30, 'red', 'white');
+  //scene.add(gridXZ);
+  
+  var ambient = new THREE.AmbientLight(0x777777);
+	scene.add(ambient);
+	var directionalLight = new THREE.DirectionalLight(0xffffff);
+	directionalLight.position.set(0, 1, 1).normalize();
+	scene.add(directionalLight);
+  
+  var geometry = new THREE.PlaneGeometry(300, 300);
+	var material = new THREE.MeshLambertMaterial();
+
+	var ground = new THREE.Mesh(geometry, material);
+	scene.add(ground);
+	ground.rotation.x = -Math.PI / 2;
+	//ground.position.y = 0.5;
+	loadTexture(ground , 'https://i.imgur.com/hNvz97r.jpg');
+  
+	
+  tank = buildTank();
+  scene.add (tank)
+	
+  buildSprite();
+  buildTargetBoard();
+}
+
+function tankAction(){
+	
+  keyboard.update();
+  
+ 	if ( keyboard.pressed("W") )  
+       tank.position.x += 1 ;
+  else if (keyboard.pressed("S") )
+			 tank.position.x -= 1 ;
+  
+  if ( keyboard.pressed("up") )  
+       if( theta2 <= 1.1 ) theta2 += 0.1 ; 
+  if (keyboard.pressed("down") )
+			 if( theta2 >= -0.1 ) theta2 -= 0.1  ; 
+  turn.rotation.z = theta2;
+  
+  if ( keyboard.pressed("left") )  
+       theta1 += 0.1 ;
+  else if (keyboard.pressed("right") )
+			 theta1 -= 0.1 ;
+   turret.rotation.y = theta1;     
+   
+  if (keyboard.down("space")) {
+		var cannonBall = new CannonBall( turn.localToWorld(new THREE.Vector3( 10 , 0 , 0))  , turn.localToWorld(new THREE.Vector3( 5 , 0 , 0)) );
+  	cannonballs.push( cannonBall) ;
+  }
+  
+}
+
+function animate() {
+  
+  tankAction(); 
+  
+  for( var i = 0 ; i < cannonballs.length ; i++ ){	
+    if(cannonballs[i].fire )cannonballs[i].explosion();
+    else cannonballs[i].update(0.1);
+  }
+  
+  if( thirdPersonView) { 
+    var cameraOffset = turret.localToWorld(new THREE.Vector3( -60 , 40 , 0)); 
+		camera.position.copy(cameraOffset);
+		camera.lookAt(  turret.localToWorld(new THREE.Vector3( 100 , 10 , 0))  );
+  }
+	else{ 
+    var cameraOffset = tank.localToWorld(new THREE.Vector3( -80 , 100 , 80)); 
+		camera.position.copy(cameraOffset);
+		camera.lookAt(  tank.position);
+  }
+  
+  renderer.render (scene, camera);
+  requestAnimationFrame (animate);
+  
+}
+window.focus();
+
+
+</script>
+</body>
+
+</html>

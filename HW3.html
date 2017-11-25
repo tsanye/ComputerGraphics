@@ -23,10 +23,10 @@ body {
 
 <body> 
 <div id="info">I4B05 HW3<br>
-Press W/S to move tank , Space to fire <br>
-Up / Down / Left / Right  to change direction of  cannon 
-<br><button id="toggle" style="width:20%">Change View</button>
-</div>
+利用W/S來操作坦克移動，空白鍵發射砲彈<br>
+利用上下左右操作砲管方向，需打到標靶中心（黃色區塊）<br>
+<button id="toggle" style="width:20%">Change View</button>
+</div> 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js">
 </script>
 <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
@@ -187,7 +187,7 @@ class CannonBall{
     	this.mesh.position.copy(this.pos);
       if( this.pos.y < 0 ){
     		this.fire = true ;      
-        this.sprite.position.copy(new THREE.Vector3( this.pos.x , 10 , this.pos.z ) );
+        this.sprite.position.copy(new THREE.Vector3( this.pos.x , 5 , this.pos.z ) );
         scene.remove(this.mesh);
     		scene.add(this.sprite);
     	}

@@ -159,12 +159,13 @@ function buildBase(){
 	
  THREE.ImageUtils.crossOrigin = '';
   var texture1 = THREE.ImageUtils.loadTexture('https://i.imgur.com/qPPyRKZ.png');
-  var texture2 = THREE.ImageUtils.loadTexture('https://i.imgur.com/0LEaDvC.png');
-  var texture3 = THREE.ImageUtils.loadTexture('https://i.imgur.com/919P7sz.png');
+  var texture2 = THREE.ImageUtils.loadTexture('https://i.imgur.com/Hd4YiRR.png');
+  var texture3 = THREE.ImageUtils.loadTexture('https://i.imgur.com/L79egTR.png');
+  var texture4 = THREE.ImageUtils.loadTexture('https://i.imgur.com/919P7sz.png');
 
   var materialArray = [
     new THREE.MeshBasicMaterial({ // +x
-      map: texture3,
+      map: texture4,
       side: THREE.DoubleSide
     }),
     new THREE.MeshBasicMaterial({ // -x
@@ -472,6 +473,7 @@ function animate() {
   
 }
 window.focus();
+
 
 
 </script>

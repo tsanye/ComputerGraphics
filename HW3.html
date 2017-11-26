@@ -6,7 +6,7 @@
 <style>
 #info {
   position: absolute;
-  top: 1%;
+  top: 0;
   width: 100%;
   padding: 20px;
   text-align: center;
@@ -50,6 +50,213 @@ var stArray = [];
 $("#toggle").click(function() {
   thirdPersonView = ! thirdPersonView ;
 });
+
+
+init();
+animate();
+
+class CannonBall{
+	
+  constructor( initPos , tmp ){
+  	var geometry = new THREE.SphereGeometry(1.5, 20, 20);
+  	this.mesh = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial());
+    loadTexture(this.mesh, 'https://i.imgur.com/sKVfaxZ.jpg');
+  	scene.add(this.mesh);
+  	this.pos = initPos ;
+  	this.vel = initPos.clone().sub(tmp).multiplyScalar(5) ;
+  	this.force = new THREE.Vector3(0,-10,0);
+   	this.fire = false; 
+   
+    this.baseS = 0 ;
+    this.baseT = 0;
+    this.counter = 0 ;
+    this.sprite =  buildSprite();
+    
+    this.stArray = [] ;
+    
+    for (var i = 0; i < 5; i++) {
+    	var row = [];
+    	for (var j = 0; j < 9; j++)
+      	row.push(new THREE.Vector2(j * 0.125, 1 - 0.25 * i));
+    	this.stArray.push(row);
+  	}
+  } 
+ 
+  update(dt){
+  	if( ! this.fire){
+    	this.vel.add (this.force.clone().multiplyScalar(dt));
+    	this.pos.add (this.vel.clone().multiplyScalar(dt)); 
+    	this.mesh.position.copy(this.pos);
+      if( this.pos.y < 0 ){
+    		this.fire = true ;      
+        this.sprite.position.copy(new THREE.Vector3( this.pos.x , 10 , this.pos.z ) );
+        scene.remove(this.mesh);
+    		scene.add(this.sprite);
+    	}
+      if( this.pos.distanceTo(targetBoard.position) <= 5 && scene.getObjectByName( "TargetBoard") !== undefined ){
+      	var targetX = targetBoard.position.x ;
+      	if( targetX < 0  && this.pos.x <= targetX )
+        	this.fire = true ;   
+        else if( targetX > 0 && this.pos.x >= targetX )
+					this.fire = true ;   
+        
+    		if(this.fire){       
+        	this.sprite.position.copy(targetBoard.position);
+        	scene.remove(this.mesh);
+        	scene.remove(targetBoard);
+    			scene.add(this.sprite);     
+        }
+      }
+      
+    }
+    
+  }
+  explosion(){
+  	this.counter++ ;
+  	if( this.fire && this.counter % 4 === 0 && this.counter < 130){
+    	
+      var geometry = this.sprite.geometry;
+      
+      var st0 = stArray[this.baseS + 1][this.baseT].clone();
+      var st1 = stArray[this.baseS + 1][this.baseT + 1].clone();
+      var st2 = stArray[this.baseS][this.baseT + 1].clone();
+      var st3 = stArray[this.baseS][this.baseT].clone();
+
+      geometry.faceVertexUvs[0][0][0].copy(st0);
+      geometry.faceVertexUvs[0][0][1].copy(st1);
+      geometry.faceVertexUvs[0][0][2].copy(st2);
+
+      geometry.faceVertexUvs[0][1][0].copy(st0);
+      geometry.faceVertexUvs[0][1][1].copy(st2);
+      geometry.faceVertexUvs[0][1][2].copy(st3);
+       
+      geometry.uvsNeedUpdate = true;
+
+      this.baseT = (this.baseT + 1) % 8;
+      if (this.baseT === 0) {
+        this.baseS = (this.baseS + 1) % 4;
+      }
+      this.sprite.lookAt (camera.position);	
+    }
+  	else if( this.fire && this.counter > 130){
+    		scene.remove(this.sprite);
+    }
+  }
+  
+  
+}
+
+function setUpStArray() {
+  for (var i = 0; i < 5; i++) {
+    var row = [];
+    for (var j = 0; j < 9; j++)
+      row.push(new THREE.Vector2(j * 0.125, 1 - 0.25 * i));
+    stArray.push(row);
+  }
+}
+
+function buildBase(){
+	
+ THREE.ImageUtils.crossOrigin = '';
+  var texture1 = THREE.ImageUtils.loadTexture('https://i.imgur.com/qPPyRKZ.png');
+  var texture2 = THREE.ImageUtils.loadTexture('https://i.imgur.com/0LEaDvC.png');
+  var texture3 = THREE.ImageUtils.loadTexture('https://i.imgur.com/919P7sz.png');
+
+  var materialArray = [
+    new THREE.MeshBasicMaterial({ // +x
+      map: texture3,
+      side: THREE.DoubleSide
+    }),
+    new THREE.MeshBasicMaterial({ // -x
+      map: texture3,
+      side: THREE.DoubleSide
+    }),
+    new THREE.MeshBasicMaterial({ // +y
+      map: texture2,
+      side: THREE.DoubleSide
+    }),
+    new THREE.MeshBasicMaterial({ // -Y
+      map: texture2,
+      color: 0x000000,
+      side: THREE.DoubleSide
+    }),
+    new THREE.MeshBasicMaterial({ // +z
+      map: texture1,
+      side: THREE.DoubleSide
+    }),
+    new THREE.MeshBasicMaterial({ // -Z
+      map: texture1,
+      side: THREE.DoubleSide
+    })
+  ];
+
+  var material = new THREE.MultiMaterial(materialArray);
+  cube = new THREE.Mesh(new THREE.BoxGeometry(40,10,20), material);
+  // the "new format": not yet work ...
+  //cube = new THREE.Mesh (geometry, materialArray);
+
+  return cube;
+
+}
+
+function buildParts() {
+  
+  var parts = [];
+  
+	var mat = new THREE.MeshNormalMaterial()
+	var base = new THREE.Object3D();
+	var baseMesh = buildBase();
+  //loadTexture(baseMesh , 'https://i.imgur.com/yoZ1jSv.jpg');
+	base.add (baseMesh);
+	baseMesh.position.set (-10,5,0);
+	parts.push (base);
+
+    var turret = new THREE.Mesh (new THREE.CylinderGeometry (10,10,10, 30),mat);
+    parts.push (turret);
+    loadTexture(turret , 'https://i.imgur.com/RkHzof5.jpg');
+    
+    var turn = new THREE.Object3D();
+    var turnMesh = new THREE.Mesh (new THREE.CylinderGeometry (1.5, 1.5, 10, 30), mat);
+    turn.add (turnMesh);
+    loadTexture(turnMesh , 'https://i.imgur.com/xrWLG14.png');
+    turnMesh.rotation.x = Math.PI/2;
+    parts.push (turn);
+    
+    var cannon = new THREE.Object3D()
+    cannon0 = new THREE.Object3D()
+    var cannonMesh = new THREE.Mesh (new THREE.CylinderGeometry (1.5, 1.5, 10, 30), mat);
+     loadTexture(cannonMesh , 'https://i.imgur.com/xrWLG14.png');
+    cannon0.add (cannonMesh);
+    cannonMesh.position.y = 5;
+    cannon.add (cannon0);
+    cannon0.rotation.z = -Math.PI/2;
+    parts.push (cannon);
+    
+    return parts;
+}
+
+function buildTank(){
+
+  let parts = buildParts();
+  
+  let tank = new THREE.Object3D();
+
+  let base = parts[0]
+  tank.add (base);
+  
+  turret = parts[1]
+  tank.add (turret)
+  turret.position.set (0, 15, 0);
+  
+  turn = parts[2]
+  turn.position.x = 10
+  turret.add (turn);
+  
+  let cannon = parts[3]
+  turn.add (cannon);
+  
+  return tank;
+}
 
 function buildSprite(){
 	
@@ -150,168 +357,6 @@ function buildTargetBoard(){
   targetBoard.rotation.y = Math.PI/ 2 ;
 }
 
-init();
-animate();
-
-class CannonBall{
-	
-  constructor( initPos , tmp ){
-  	var geometry = new THREE.SphereGeometry(1.5, 20, 20);
-  	this.mesh = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial());
-    loadTexture(this.mesh, 'https://i.imgur.com/sKVfaxZ.jpg');
-  	scene.add(this.mesh);
-  	this.pos = initPos ;
-  	this.vel = initPos.clone().sub(tmp).multiplyScalar(5) ;
-  	this.force = new THREE.Vector3(0,-10,0);
-   	this.fire = false; 
-   
-    this.baseS = 0 ;
-    this.baseT = 0;
-    this.counter = 0 ;
-    this.sprite =  buildSprite();
-    
-    this.stArray = [] ;
-    
-    for (var i = 0; i < 5; i++) {
-    	var row = [];
-    	for (var j = 0; j < 9; j++)
-      	row.push(new THREE.Vector2(j * 0.125, 1 - 0.25 * i));
-    	this.stArray.push(row);
-  	}
-  } 
- 
-  update(dt){
-  	if( ! this.fire){
-    	this.vel.add (this.force.clone().multiplyScalar(dt));
-    	this.pos.add (this.vel.clone().multiplyScalar(dt)); 
-    	this.mesh.position.copy(this.pos);
-      if( this.pos.y < 0 ){
-    		this.fire = true ;      
-        this.sprite.position.copy(new THREE.Vector3( this.pos.x , 5 , this.pos.z ) );
-        scene.remove(this.mesh);
-    		scene.add(this.sprite);
-    	}
-      if( this.pos.distanceTo(targetBoard.position) <= 5 && scene.getObjectByName( "TargetBoard") !== undefined ){
-      	var targetX = targetBoard.position.x ;
-      	if( targetX < 0  && this.pos.x <= targetX )
-        	this.fire = true ;   
-        else if( targetX > 0 && this.pos.x >= targetX )
-					this.fire = true ;   
-        
-    		if(this.fire){       
-        	this.sprite.position.copy(targetBoard.position);
-        	scene.remove(this.mesh);
-        	scene.remove(targetBoard);
-    			scene.add(this.sprite);     
-        }
-      }
-      
-    }
-    
-  }
-  explosion(){
-  	this.counter++ ;
-  	if( this.fire && this.counter % 4 === 0 && this.counter < 130){
-    	
-      var geometry = this.sprite.geometry;
-      
-      var st0 = stArray[this.baseS + 1][this.baseT].clone();
-      var st1 = stArray[this.baseS + 1][this.baseT + 1].clone();
-      var st2 = stArray[this.baseS][this.baseT + 1].clone();
-      var st3 = stArray[this.baseS][this.baseT].clone();
-
-      geometry.faceVertexUvs[0][0][0].copy(st0);
-      geometry.faceVertexUvs[0][0][1].copy(st1);
-      geometry.faceVertexUvs[0][0][2].copy(st2);
-
-      geometry.faceVertexUvs[0][1][0].copy(st0);
-      geometry.faceVertexUvs[0][1][1].copy(st2);
-      geometry.faceVertexUvs[0][1][2].copy(st3);
-       
-      geometry.uvsNeedUpdate = true;
-
-      this.baseT = (this.baseT + 1) % 8;
-      if (this.baseT === 0) {
-        this.baseS = (this.baseS + 1) % 4;
-      }
-      this.sprite.lookAt (camera.position);	
-    }
-  	else if( this.fire && this.counter > 130){
-    		scene.remove(this.sprite);
-    }
-  }
-  
-  
-}
-
-function setUpStArray() {
-  for (var i = 0; i < 5; i++) {
-    var row = [];
-    for (var j = 0; j < 9; j++)
-      row.push(new THREE.Vector2(j * 0.125, 1 - 0.25 * i));
-    stArray.push(row);
-  }
-}
-
-function buildParts() {
-  
-  var parts = [];
-  
-	var mat = new THREE.MeshNormalMaterial()
-	var base = new THREE.Object3D();
-	var baseMesh = new THREE.Mesh (new THREE.BoxGeometry (40,10,20), mat);
-  loadTexture(baseMesh , 'https://i.imgur.com/yoZ1jSv.jpg');
-	base.add (baseMesh);
-	baseMesh.position.set (-10,5,0);
-	parts.push (base);
-
-    var turret = new THREE.Mesh (new THREE.CylinderGeometry (10,10,10, 30),mat);
-    parts.push (turret);
-    loadTexture(turret , 'https://i.imgur.com/yoZ1jSv.jpg');
-    
-    var turn = new THREE.Object3D();
-    var turnMesh = new THREE.Mesh (new THREE.CylinderGeometry (1.5, 1.5, 10, 30), mat);
-    turn.add (turnMesh);
-    loadTexture(turnMesh , 'https://i.imgur.com/yoZ1jSv.jpg');
-    turnMesh.rotation.x = Math.PI/2;
-    parts.push (turn);
-    
-    var cannon = new THREE.Object3D()
-    cannon0 = new THREE.Object3D()
-    var cannonMesh = new THREE.Mesh (new THREE.CylinderGeometry (1.5, 1.5, 10, 30), mat);
-     loadTexture(cannonMesh , 'https://i.imgur.com/yoZ1jSv.jpg');
-    cannon0.add (cannonMesh);
-    cannonMesh.position.y = 5;
-    cannon.add (cannon0);
-    cannon0.rotation.z = -Math.PI/2;
-    parts.push (cannon);
-    
-    return parts;
-}
-
-function buildTank(){
-
-  let parts = buildParts();
-  
-  let tank = new THREE.Object3D();
-
-  let base = parts[0]
-  tank.add (base);
-  
-  turret = parts[1]
-  tank.add (turret)
-  turret.position.set (0, 15, 0);
-  
-  turn = parts[2]
-  turn.position.x = 10
-  turret.add (turn);
-  
-  let cannon = parts[3]
-  turn.add (cannon);
-  
-  return tank;
-}
-
 function loadTexture(  mesh , url ) {
 
 	// instantiate a loader
@@ -326,8 +371,7 @@ function loadTexture(  mesh , url ) {
       	map: texture,
       	transparent: true,
         side: THREE.DoubleSide
-      });
-     
+      });  
     },   
     function(xhr) {   // Function called when download progresses
       console.log((xhr.loaded / xhr.total * 100) + '% loaded');
@@ -348,17 +392,12 @@ function init() {
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setClearColor(0x888888);
-
   document.body.appendChild(renderer.domElement);
-
 
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000);
 
   scene = new THREE.Scene();
-  
-  let gridXZ = new THREE.GridHelper(300, 30, 'red', 'white');
-  //scene.add(gridXZ);
-  
+    
   var ambient = new THREE.AmbientLight(0x777777);
 	scene.add(ambient);
 	var directionalLight = new THREE.DirectionalLight(0xffffff);
@@ -371,10 +410,8 @@ function init() {
 	var ground = new THREE.Mesh(geometry, material);
 	scene.add(ground);
 	ground.rotation.x = -Math.PI / 2;
-	//ground.position.y = 0.5;
 	loadTexture(ground , 'https://i.imgur.com/hNvz97r.jpg');
   
-	
   tank = buildTank();
   scene.add (tank)
 	
@@ -424,8 +461,8 @@ function animate() {
 		camera.position.copy(cameraOffset);
 		camera.lookAt(  turret.localToWorld(new THREE.Vector3( 100 , 10 , 0))  );
   }
-	else{ 
-    var cameraOffset = tank.localToWorld(new THREE.Vector3( -80 , 100 , 80)); 
+  else{ 
+    var cameraOffset = tank.localToWorld(new THREE.Vector3( -60 , 80 , 60)); 
 		camera.position.copy(cameraOffset);
 		camera.lookAt(  tank.position);
   }

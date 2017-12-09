@@ -24,7 +24,7 @@ body {
 <body> 
 <div id="info">I4B05 HW4<br>
 use UP/Down to adjust speed  , Left/Right to turn<br>
-when collision happened , use space to go backwards
+when collision happens , use space to go backwards
 <br>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js">
@@ -225,17 +225,15 @@ function carAction(dt){
 		speed -= 0.5;    
    
    for( var i  = 0 ; i < obstacles.length ; i++){
-		if( obstacles[i].position.clone().distanceTo(pos) <= obstacles[i].radius  + 20 ){
+		if( obstacles[i].position.clone().distanceTo(pos) <= obstacles[i].radius  + 30 ){
 			collisionDetection( pos.x , pos.z , i );
-			console.log(obstacles[i].position);
-			//console.log( obstacles[i].position.clone().distanceTo(pos) );
 		}
    }
-   
+   console.log(pos);
    if(Check_Intersect)
 		speed = 0 ;
    else 
-		speed = Math.clamp (speed, 0.01, 30.0);		
+		speed = Math.clamp (speed, 0.1, 30.0);		
    
    vel = new THREE.Vector3(speed,0,0);
   
@@ -403,7 +401,7 @@ function loadRepeatTexture( size , url ){
   
     THREE.ImageUtils.crossOrigin = '';
     texture = THREE.ImageUtils.loadTexture(url);
-    texture.repeat.set(16, 16);
+    texture.repeat.set(10, 10);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.minFilter = THREE.LinearMipMapLinearFilter;

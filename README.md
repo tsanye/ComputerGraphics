@@ -22,3 +22,13 @@
 - 視野：god's eye view 以及 坦克操作員視角（方便瞄準）
 - 美觀：為場景和坦克模型架設合適的燈光，設定合適的顏色
 - 進階要求：[參考](https://docs.google.com/presentation/d/17tTiIvHCruuUXcSnboq1dPTnf0tQtg53xqUdj3nE2zw/edit#slide=id.p)此處，將砲彈創建成Class , 使坦克可以發射多發。
+
+
+#### HomeWork 4 OBJ loader, drive, collision [網址連結](http://web.cse.ttu.edu.tw/jmchen/cg/fall17/hw4.htm)
+- 說明：載入一車子模型，在場景上藉由鍵盤控制車輛移動，場景中有大大小小的障礙物，當車子碰到障礙物時，要使車輛立即停止
+- 開車: [Helper](https://docs.google.com/presentation/d/1dkUZC6EzHXr9WJ_oqd0d9RqcIMzdXeOQoyIGgqwxP80/edit)
+- 載入模型: 利用合適的loader將其匯入three.js 場景中，以適當大小呈現
+- 碰撞偵測：實作[此頁程式](https://docs.google.com/presentation/d/1vevW4pg9LDJlxUDB-xDjUM1k9Hfu4NXv9s1r3UC3ygQ/edit)，使得車輛與障礙物相撞時立即停止。使用者須自行將車輛駛出。
+- 視野：螢幕分割成左右兩viewports,  一邊為上帝視角 (god's eye view), 一邊為駕駛的第三人稱視角 (third person view)
+- 障礙物設計：可以用threejs所提供的geometry, 或是使用circular billboard (with cut-out texture)
+

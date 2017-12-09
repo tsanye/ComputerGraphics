@@ -304,7 +304,7 @@ function collisionDetection( positionX , positionZ , index) {
 		if (RmaxZ < 0) /* R due South of circle */
 			Check_Intersect = (Math.abs(RmaxZ) < obstacles[index].radius );	
 		else if (RminZ > 0) /* R due North of circle */
-			Check_Intersect = (RminZ < radius);	
+			Check_Intersect = (RminZ < obstacles[index].radius);	
 		else /* R contains circle centerpoint */
 			Check_Intersect = true;
 	} 

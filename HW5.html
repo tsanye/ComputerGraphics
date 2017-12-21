@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<style>
+#info {
+  position: absolute;
+  top: 2%;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  color: #ffff00
+}
+
+body {
+  overflow: hidden;
+}
+
+
+</style>
+</head>
+
+<body> 
+<div id="info">I4B05 HW5
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/MTLLoader.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/OBJLoader.js"></script>
+
+
+<script>
+var scene, renderer, camera;
+var controls;
+var spotLight , lampSpotLight;
+var button , button2  ;
+var raycaster = new THREE.Raycaster();
+var pickables = [];
+var mouse = new THREE.Vector2();
+var light1 = 0  , light2 = 0 ;
+const KP = 150;
+const KD = 20;
+var y1 = 0 , v1 = 0 , y2 = 0 , v2 = 0 ;
+
+class Button {
+  constructor(color, name) {
+    this.on = false;
+    this.hsl = color.getHSL();
+    this.obj = this.makeButton(name);
+  }
+
+  get isOn() {
+    return this.on;
+  }
+
+  toggle() {
+    this.on = !this.on;
+    this.update();
+  }
+
+  update() {
+    if (this.on) {
+      this.obj.scale.set (1,0.5,1);
+      this.obj.children[0].material.color.setHSL 
+        (this.hsl.h, 0, 1);
+    } else {
+    	this.obj.scale.set(1,1,1);
+    	this.obj.children[0].material.color.setHSL 
+         (this.hsl.h, this.hsl.s, this.hsl.l);
+    }
+  }
+  
+
+  makeButton(name) {
+    let mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4 ),
+      new THREE.MeshLambertMaterial());
+    let button = new THREE.Object3D();
+    button.add(mesh);
+    mesh.material.color.setHSL (this.hsl.h, this.hsl.s, this.hsl.l)
+    mesh.position.y = 2 ;
+    button.name = name;  // a string
+    return button;
+  }
+
+}
+
+init();
+animate();
+
+function loadTexture(  mesh , url ) {
+
+	// instantiate a loader
+  var loader = new THREE.TextureLoader();
+  loader.setCrossOrigin('');
+  // load a resource
+  loader.load(
+    url, 
+    function (texture) {   // Function when resource is loaded
+    	console.log ('texture loaded ...');
+      mesh.material = new THREE.MeshLambertMaterial( { 
+      	map: texture
+      });  
+    },   
+    function(xhr) {   // Function called when download progresses
+      console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    },   
+    function(xhr) {   // Function called when download errors
+      console.log('An error happened');
+    }
+  );
+ 
+}
+
+function buildDesk(){
+	
+	var desk = new THREE.Object3D();
+	
+	var desk1 = new THREE.Mesh( new THREE.BoxGeometry(80 , 10 , 40), new THREE.MeshPhongMaterial() );
+	loadTexture( desk1 , "https://i.imgur.com/ovt3l1l.jpg" ) ;
+	desk.add(desk1);
+	desk1.position.y = 40 ; 
+	scene.add(desk) ;
+	
+	var leg1 = new THREE.Mesh( new THREE.BoxGeometry(8 , 35 , 8), new THREE.MeshPhongMaterial() );
+	loadTexture( leg1 , "https://i.imgur.com/ovt3l1l.jpg" ) ;
+	desk.add(leg1);
+	leg1.position.set(-36 , 17.5 , 16 );
+	
+	var leg2 = leg1.clone();
+	loadTexture( leg2 , "https://i.imgur.com/ovt3l1l.jpg" ) ;
+	desk.add(leg2);
+	leg2.position.set(36 , 17.5 , 16 );
+	
+	var leg3 = leg1.clone();
+	loadTexture( leg3 , "https://i.imgur.com/ovt3l1l.jpg" ) ;
+	desk.add(leg3);
+	leg3.position.set(-36 , 17.5 , -16 );
+	
+	var leg4 = leg1.clone();
+	loadTexture( leg4 , "https://i.imgur.com/ovt3l1l.jpg" ) ;
+	desk.add(leg4);
+	leg4.position.set(36 , 17.5 , -16 );
+	
+	
+   desk.traverse (
+   function (mesh) {
+     if (mesh instanceof THREE.Mesh) {
+         mesh.castShadow = true;
+        mesh.receiveShadow = true;
+      }
+    }
+  );
+}
+
+function buildRemote(){
+	var remote = new THREE.Object3D();
+	
+	var mesh = new THREE.Mesh( new THREE.BoxGeometry(15 , 3 , 7), new THREE.MeshPhongMaterial({color:0x333333}) );
+	remote.add(mesh) ;
+	remote.position.set( 25 , 46.5 , 10 );// y : desk position y 40 + desk y 10/2 + remote y 3/2 
+	scene.add(remote) ;
+	
+	button = new Button(new THREE.Color (0x12ffff), 'cyan');
+	remote.add(button.obj);
+	button.obj.position.x = -3 ;
+	pickables.push(button.obj);
+
+	button2 = new Button(new THREE.Color (0xefa22f), 'orange');
+	remote.add(button2.obj);
+	button2.obj.position.x = 3;
+	pickables.push(button2.obj);
+	
+	remote.rotation.y = Math.PI/4 ; 
+	
+	remote.traverse (
+   function (mesh) {
+     if (mesh instanceof THREE.Mesh) {
+       mesh.castShadow = true;
+        mesh.receiveShadow = true;
+      }
+    }
+  );
+}
+
+function init() {
+  
+  scene = new THREE.Scene();
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x404040);
+  document.body.appendChild(renderer.domElement);
+
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 10000);
+  camera.position.set( -30 , 160 , 100 );
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  //////////////////////////////////
+  // lighting
+  var light = new THREE.AmbientLight(0x888888); // soft white light
+  scene.add(light);
+
+
+  spotLight = new THREE.SpotLight(0xffffff);
+  spotLight.position.set(60, 250, 70);
+
+  spotLight.angle = Math.PI / 5;
+  spotLight.penumbra = 0.25;
+  //spotLight.intensity = 0.3;
+
+  spotLight.castShadow = true;
+  spotLight.shadow.mapSize.width = 512;
+  spotLight.shadow.mapSize.height = 512;
+
+  spotLight.shadow.camera.near = 50;
+  spotLight.shadow.camera.far = 1000;
+  spotLight.shadow.camera.fov = 50;
+
+   scene.add(spotLight);
+  //scene.add(new THREE.SpotLightHelper(spotLight));
+  //scene.add ( new THREE.CameraHelper (spotLight.shadow.camera) );
+ 
+ 
+  lampSpotLight = new THREE.SpotLight(0xefb043);
+  lampSpotLight.position.set(-20 , 85 , -5 );
+
+  lampSpotLight.angle = Math.PI / 3.2;
+  lampSpotLight.penumbra = 0.2;
+
+  lampSpotLight.castShadow = true;
+  lampSpotLight.shadow.mapSize.width = 256;
+  lampSpotLight.shadow.mapSize.height = 256;
+
+  lampSpotLight.shadow.camera.near = 20;
+  lampSpotLight.shadow.camera.far = 500;
+  lampSpotLight.shadow.camera.fov = 70;
+
+  scene.add(lampSpotLight);
+
+  // scene.add(new THREE.SpotLightHelper(lampSpotLight));
+  //scene.add ( new THREE.CameraHelper (lampSpotLight.shadow.camera) );
+  ////////////////////////////////////////////
+
+  var floor = new THREE.Mesh(new THREE.PlaneGeometry(150, 150 , 10 , 10 ), new THREE.MeshPhongMaterial());
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  loadTexture( floor , "https://i.imgur.com/7TxRw0E.jpg") ;
+  scene.add(floor);
+  
+  var penHolder = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 15, 32, 10 , true), new THREE.MeshPhongMaterial({color:0x526bdd ,side:THREE.DoubleSide, transparent:true , opacity:0.7}));
+  penHolder.position.set( 0 , 45 + 7 , 2 ) ; 
+  penHolder.receiveShadow = true ; 
+  penHolder.castShadow = true;
+  scene.add(penHolder);
+  
+  /////////////////////////////////////  shadow related
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  
+ 
+  //scene.add ( new THREE.CameraHelper (spotLight.shadow.camera) );
+	
+  window.addEventListener('resize', onWindowResize, false);
+   document.addEventListener('mousedown', onDocumentMouseDown, false);
+	
+   buildDesk();
+   buildRemote();
+   loads( 'chair.mtl', 'chair.obj', 70 , new THREE.Vector3(0 , 0 , 50) , 1 );
+   loads( 'lamp.mtl', 'lamp.obj', 45 , new THREE.Vector3(-55 , 45 , -35) , 2 );
+   loads( 'pencil.mtl', 'pencil.obj', 15 , new THREE.Vector3(0 , 45 , 0) ,  3);
+   loads( 'pencil.mtl', 'pencil.obj', 15 , new THREE.Vector3(3 , 45 , 4 ) ,  4);
+}
+
+function loads( mtlname , objname , size , pos , type ){
+	// model
+ 
+  var onProgress = function(xhr) {
+    if (xhr.lengthComputable) {
+      var percentComplete = xhr.loaded / xhr.total * 100;
+      console.log(Math.round(percentComplete, 2) + '% downloaded');
+    }
+  };
+
+  var onError = function(xhr) {};
+
+  //THREE.Loader.Handlers.add(/\.dds$/i, new THREE.DDSLoader());
+
+  var mtlLoader = new THREE.MTLLoader();
+  mtlLoader.setPath('resource/');
+ 	mtlLoader.load(mtlname, function(materials) {
+	
+    materials.preload();
+
+    var objLoader = new THREE.OBJLoader();
+    objLoader.setMaterials(materials);
+    objLoader.setPath('resource/');
+    objLoader.load(objname, function(object) {
+
+			var theObject =  unitize (object, size, type);
+			scene.add (theObject);
+			theObject.position.copy(pos) ;
+		    
+			//////// MATERIAL ADJUSTMENT for porsche ///////////////
+			// transparent window: double-side fix
+			object.traverse (
+				function(mesh) {
+					if (mesh instanceof THREE.Mesh) {
+						mesh.material.side = THREE.DoubleSide;
+						mesh.castShadow = true;
+						mesh.receiveShadow = true;
+					}
+				});
+
+
+    }, onProgress, onError);
+
+  });
+
+}
+
+function unitize (object, targetSize, type ) {  
+	
+	// find bounding box of 'object'
+	var box3 = new THREE.Box3();
+	box3.setFromObject (object);
+	var size = new THREE.Vector3();
+	size.subVectors (box3.max, box3.min);
+	var center = new THREE.Vector3();
+	center.addVectors(box3.max, box3.min).multiplyScalar (0.5);
+	
+	console.log ('center: ' + center.x + ', '+center.y + ', '+center.z );
+	console.log ('size: ' + size.x + ', ' +  size.y + ', '+size.z );
+	
+	// uniform scaling according to objSize
+	var objSize = findMax (size);
+	var scaleSet = targetSize/objSize;
+				
+	var theObject =  new THREE.Object3D();
+	theObject.add (object);
+	
+	if( type === 1){ // 對椅子模組的微調
+		object.rotation.y = Math.PI;
+	}
+	if( type === 2){ // 對檯燈模組的微調
+		object.rotation.y = -Math.PI/5;
+	}
+	if( type === 4){ // 對鉛筆模組的微調
+		object.rotation.z = -Math.PI/7;
+	}
+	object.scale.set (scaleSet, scaleSet, scaleSet );
+	object.position.set (-center.x*scaleSet , -center.y*scaleSet + size.y/2*scaleSet, -center.z*scaleSet );
+	return theObject;
+	
+	
+	// helper function
+	function findMax(v) {
+		if (v.x > v.y) {
+			return v.x > v.z ? v.x : v.z;
+		} else { // v.y > v.x
+			return v.y > v.z ? v.y : v.z;
+		} 
+	}
+}
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function onDocumentMouseDown(event) {
+
+  event.preventDefault();
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  // find intersections
+  raycaster.setFromCamera(mouse, camera);
+  var intersects = raycaster.intersectObjects(pickables, true);
+  if (intersects.length > 0) {
+    let picked = intersects[0].object.parent.name;
+    switch (picked) {
+    case 'cyan':
+		console.log("hello");
+    	button.toggle();
+		light1 = (button.isOn === true) ? 1 : 0;
+      break;
+    case 'orange':
+    	button2.toggle();
+		light2 = (button2.isOn === true) ? 1 : 0;
+      break;
+    }
+  }
+}
+
+function feedbackForce ( ref ,y , v ) {
+	let f = -KP*(y - ref) - KD* v;
+  return f;
+}
+
+function animate() {
+	
+  var f = feedbackForce( light1 , y1 , v1);
+  let dt = 0.01;
+  v1 += f*dt;
+  y1 += v1*dt
+  lampSpotLight.intensity = y1;
+  console.log(y1);
+  var f2 = feedbackForce( light2 , y2 , v2 );
+  v2 += f2*dt;
+  y2 += v2*dt
+  spotLight.intensity = y2 ; 
+	
+  lampSpotLight.castShadow = ( lampSpotLight.intensity >= 0.005 ) ? true : false ;
+  spotLight.castShadow = (spotLight.intensity  >= 0.005 ) ? true :  false ;
+ 
+  controls.update();
+  
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+
+
+</script>
+</body>
+
+</html>

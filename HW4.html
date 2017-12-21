@@ -253,7 +253,7 @@ function carAction(dt){
 }
 
 function collisionDetection( positionX , positionZ , index) {
-
+							//車子位置X , 車子位置Z , 要偵測的障礙物目標
   var Rad2 = obstacles[index].radius * obstacles[index].radius; // 圓形障礙物半徑的平方
   Check_Intersect = false;   // 確認車子是否有和任何障礙物接觸到
   

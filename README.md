@@ -32,3 +32,10 @@
 - 視野：螢幕分割成左右兩viewports,  一邊為上帝視角 (god's eye view), 一邊為駕駛的第三人稱視角 (third person view)
 - 障礙物設計：可以用threejs所提供的geometry, 或是使用circular billboard (with cut-out texture)
 
+
+#### HomeWork 5 Class, Raycaster, Shadow Map [網址連結](http://web.cse.ttu.edu.tw/jmchen/cg/fall17/hw5.htm)
+- 說明：在場景中放置桌子、檯燈、遙控器、椅子等物體，並實作遙控器按鈕Class和光影操作
+- 遙控器：需有兩按鈕（以Class實作 [參考此處](https://jsfiddle.net/georgeChen/qgwb169w/)），一個操作檯燈的燈光，另一個操作室內燈光
+- 光影：場景內的燈光和物件皆需做[Shadow Map](https://sites.google.com/site/cgwith3js/home/shadowmap)
+- 進階要求：以 [PD Control](https://docs.google.com/presentation/d/1YwlfYz3jYuo8qjrgduSGvE5uNL0BIOf6aOBE8nMUpSY/edit)實作燈光之light up/dim out effect
+

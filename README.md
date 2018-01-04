@@ -39,3 +39,22 @@
 - 光影：場景內的燈光和物件皆需做[Shadow Map](https://sites.google.com/site/cgwith3js/home/shadowmap)
 - 進階要求：以 [PD Control](https://docs.google.com/presentation/d/1YwlfYz3jYuo8qjrgduSGvE5uNL0BIOf6aOBE8nMUpSY/edit)實作燈光之light up/dim out effect
 
+#### HomeWork 6 First GLSL Shader homework [網址連結](http://web.cse.ttu.edu.tw/jmchen/cg/fall17/hw6.htm)
+- 說明：分成以下三大部分
+- 1.Basic GLSL example: coordinate vs shading (with select/option)
+  - 將上課示範的程式整合成一個html：利用select/option tags選擇`座標系統的種類(object/world/eye coordinate system)`以及`shading的方式(per-vertex/per-pixel)`.
+  - 了解並整合程式碼，以達成所要的結果(+x white, -x black)。
+  - 以[Utah teapot](https://en.wikipedia.org/wiki/Utah_teapot) 當成本作業的物件。
+  - 場景中，在原點放置MeshPhongShaded的茶壺。另有一個同樣大小的茶壺，繞著原點公轉，以 shaders完成成像(shading) 
+- 2.Gooch Shaded Teapot
+  - 參考Gooch shading reference ([1](https://lva.cg.tuwien.ac.at/ecg/wiki/doku.php?id=students:gooch) , [2](http://artis.imag.fr/~Cyril.Soler/DEA/NonPhotoRealisticRendering/Papers/p447-gooch.pdf))， 只做shading的部分 （不用做 silhouette）。
+  - Shader需接收light的world coordinate (uniform variable).
+  - Point light以某個高度的圓形軌道運行。
+- 3.Using GLSL shaders in a class
+  - 將Gooch shaded teapotl 結合 class， 其重要屬性 life (生命值）簡述如下：
+  - 每個茶壺有一定的生命值，隨著生命值的減少，自轉速度會降低，透明度會增加。當生命值為零時，不再旋轉，並在一 定時間內消失（從scene當中移除）
+  - 茶壺初始時，以滑鼠，透過raycaster，放置在地面任意處，開始以localY軸自轉 
+  - 若滑鼠點到已存在的茶壺，則toggle自轉。自轉停止時，生命值不變。
+  - 在螢幕上顯示場景(scene)中仍有多少茶壺(以確定scene remove children成功)。
+- Helpers：[HW6Demo](http://web.cse.ttu.edu.tw/jmchen/cg/fall17/hw6demo.html)、[transparent shaderMaterial](http://jsfiddle.net/jmcjc5u/8jhxmwbp/)、[placer](http://jsfiddle.net/game3js/116bxzve/)
+
